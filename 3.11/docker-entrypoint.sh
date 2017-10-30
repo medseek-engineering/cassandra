@@ -43,6 +43,9 @@ if [ "$1" = 'cassandra' ]; then
 		num_tokens \
 		rpc_address \
 		start_rpc \
+		memtable_allocation_type \
+                memtable_offheap_space_in_mb \
+                commitlog_total_space_in_mb \
 	; do
 		var="CASSANDRA_${yaml^^}"
 		val="${!var}"
@@ -50,6 +53,22 @@ if [ "$1" = 'cassandra' ]; then
 			sed -ri 's/^(# )?('"$yaml"':).*/\2 '"$val"'/' "$CASSANDRA_CONFIG/cassandra.yaml"
 		fi
 	done
+	
+	for yaml in \
+	        keystore_password \
+                truststore_password \
+                keystore \
+                truststore \
+                internode_encryption \
+                enabled \
+        ; do 
+                var="CASSANDRA_${yaml^^}"
+                val="${!var}"
+                if [ "$val" ]; then
+                       sed -i "/^client_encryption_options\:/,+5s/$yaml:.*/$yaml: $val/" "$CASSANDRA_CONFIG/cassandra.yaml"
+                       sed -i "/^server_encryption_options\:/,+5s/$yaml:.*/$yaml: $val/" "$CASSANDRA_CONFIG/cassandra.yaml"
+                fi
+        done
 
 	for rackdc in dc rack; do
 		var="CASSANDRA_${rackdc^^}"
